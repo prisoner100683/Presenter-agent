@@ -1,0 +1,11 @@
+{
+  "name": "awesome-website-presenter-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Semi-automated local GUI for turning PPTX files into static presentation websites.",
+  "scripts": {
+    "automation:start": "node automation/server.js",
+    "automation:check": "node --check automation/server.js",
+    "automation:test": "node tests/automation/model-output.test.js"
+  }
+}

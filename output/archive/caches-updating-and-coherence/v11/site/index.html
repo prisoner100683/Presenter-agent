@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Caches Updating</title>
+    <link rel="stylesheet" href="./src/styles/theme.css">
+    <link rel="stylesheet" href="./src/styles/app.css">
+  </head>
+  <body>
+    <div class="presentation-app">
+      <aside class="rail">
+        <div>
+          <p class="eyebrow">Auto Presenter</p>
+          <h1>Caches Updating</h1>
+          <p class="summary">A presentation on cache memory systems for Computer Systems 2B students, covering cache updating strategies, coherence, multi-level caches, and practical implementations.</p>
+        </div>
+        <nav class="slide-nav" id="slide-nav" aria-label="Slides"></nav>
+        <div class="rail-meta">
+          <span>Left / Right</span>
+          <span>Home / End</span>
+          <span>F = Fullscreen</span>
+        </div>
+      </aside>
+      <main class="deck" aria-live="polite" id="deck"></main>
+      <div class="progress-shell" aria-hidden="true">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+    <script src="./src/content/slides.js"></script>
+    <script src="./src/core/presentation.js"></script>
+  </body>
+</html>

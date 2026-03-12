@@ -2,8 +2,7 @@
 name: awesome-website-presenter-agent
 description: "把 docx/ppt/pptx 内容转成可讲解、视觉精致的前端网站，并按成熟工程方式组织脚本、输出产物和版本目录。适用于课程讲解页、汇报展示站、活动宣讲站。"
 argument-hint: "请提供源文件路径、目标受众、风格偏好、技术栈（纯 HTML/React/Vue）和是否需要多版本输出。"
-model: Gemini 3.1 Pro (Preview) (copilot)
-
+# tools: ['vscode', 'execute', 'read', 'agent', 'edit', 'search', 'web', 'todo'] # specify the tools this agent can use. If not set, all enabled tools are allowed.
 ---
 
 <!-- Tip: Use /create-agent in chat to generate content with agent assistance -->
@@ -69,69 +68,47 @@ model: Gemini 3.1 Pro (Preview) (copilot)
 ```text
 project-root/
   docs/
-	 source/                 # 【输入区】用户放置原始 docx/ppt/pptx/md 文件
-	 outline/                # 【中间产物】AI 提炼的结构化大纲（按项目命名）
-	 decisions/              # 【中间产物】设计决策记录（配色/字体/布局原因）
-	 assets/                 # 【中间产物】提取的媒体资源（图片、视频等）
+	 source/                 # 用户原始 docx/ppt/pptx（只读归档）
+	 outline/                # 提炼后的大纲、讲解脚本
+	 decisions/              # 设计决策记录（配色/字体/布局原因）
 
   scripts/
 	 ingest/                 # 文档解析、内容提取脚本
 	 build/                  # 构建、打包、导出脚本
 	 qa/                     # 检查脚本（链接、移动端、文案）
 
-  src/                      # 【通用代码库】可复用的组件和模板
+  src/
 	 core/                   # 通用组件、布局骨架
-	 sections/               # 可复用章节模块
-	 assets/                 # 通用图标、字体、占位符
-	 styles/                 # 通用主题变量、全局样式、动效系统
-	 templates/              # HTML 模板
+	 sections/               # 各章节页面模块
+	 assets/                 # 图片、图标、字体、媒体
+	 styles/                 # 主题变量、全局样式、动效系统
+	 data/                   # 结构化内容数据（json/md）
+
+  versions/
+	 class-meeting/         # 任务名（示例：班会宣讲）
+		v1/
+		  site/               # v1 可运行源码快照（或入口映射）
+		  notes.md            # v1 变更记录
+		v2/
+		  site/
+		  notes.md
+	 orientation-training/   # 另一个任务示例
+		v1/
+		  site/
+		  notes.md
 
   output/
-	 archive/                # 【输出区】每个项目的独立完整产出
-		{project-name}/      # 项目目录（示例：class-meeting）
-		  v1/
-			 site/           # v1 完整可运行网站（HTML/CSS/JS/资源）
-			 README.md       # 使用说明
-			 notes.md        # v1 开发记录
-		  v2/
-			 site/
-			 notes.md        # v2 相对 v1 的变更说明
-		{another-project}/   # 另一个项目（示例：product-launch）
-		  v1/
-			 site/
-			 README.md
-			 notes.md
-	 preview/                # 临时预览（可选）
-	 release/                # 打包部署文件（可选）
+	 preview/                # 预览构建产物
+	 release/                # 可交付静态包
+	 archive/                # 历史导出归档
 
   tests/
 	 responsive/             # 响应式验证用例
 	 smoke/                  # 基础可用性用例
 
-  README.md                 # 【工具说明】本工具的使用方法
-  USAGE_GUIDE.md            # 【工作流指南】详细使用教程
-  CHANGELOG.md              # 版本变更历史
+  README.md
+  CHANGELOG.md
 ```
-
-### 🎯 关键原则
-
-1. **输入输出分离**：
-   - 输入：`docs/source/`（用户上传）
-   - 输出：`output/archive/{项目名}/`（AI 生成）
-
-2. **项目完全隔离**：
-   - 每个项目在 `output/archive/` 下有独立目录
-   - 项目间不共享任何具体内容文件
-   - `src/` 仅存放通用可复用代码，不包含具体项目数据
-
-3. **版本号仅在项目内递增**：
-   - 同一项目：v1 → v2 → v3...
-   - 不同项目：各自从 v1 开始
-
-4. **每个输出都是完整独立的**：
-   - `{项目名}/v1/site/` 包含运行所需的全部文件
-   - 可以直接打开 `site/index.html` 使用
-   - 不依赖外部文件
 
 ## 提示词工程执行细则
 

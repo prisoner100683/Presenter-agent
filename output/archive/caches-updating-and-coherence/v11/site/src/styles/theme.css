@@ -1,0 +1,34 @@
+:root {
+  --color-primary: #4365E2;
+  --color-secondary: #FC0128;
+  --color-dark: #1A1A2E;
+  --color-light: #F8F9FA;
+  --color-gray: #6C757D;
+  --color-success: #28A745;
+  
+  --font-heading: 'Arial', sans-serif;
+  --font-body: 'Arial', sans-serif;
+  --font-mono: 'Courier New', monospace;
+  
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 2rem;
+  --spacing-lg: 3rem;
+  --spacing-xl: 4rem;
+  
+  --border-radius: 8px;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+  
+  @media (prefers-reduced-motion: reduce) {
+    --transition: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-dark: #F8F9FA;
+    --color-light: #1A1A2E;
+    --color-gray: #ADB5BD;
+  }
+}
