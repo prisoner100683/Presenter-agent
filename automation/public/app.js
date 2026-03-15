@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 const state = {
   profiles: [],
@@ -12,6 +12,9 @@ const elements = {
   model: document.getElementById("profile-model"),
   apiKey: document.getElementById("profile-api-key"),
   profileHint: document.getElementById("profile-hint"),
+  configModal: document.getElementById("config-modal"),
+  openConfigModal: document.getElementById("open-config-modal"),
+  closeConfigModal: document.getElementById("close-config-modal"),
   resetProfile: document.getElementById("reset-profile"),
   saveProfile: document.getElementById("save-profile"),
   deleteProfile: document.getElementById("delete-profile"),
@@ -26,17 +29,28 @@ const elements = {
   jobStatus: document.getElementById("job-status"),
   jobResult: document.getElementById("job-result"),
   previewLink: document.getElementById("preview-link"),
-  resultMeta: document.getElementById("result-meta")
+  resultMeta: document.getElementById("result-meta"),
+  historyList: document.getElementById("history-list"),
+  refreshHistory: document.getElementById("refresh-history")
 };
+
+function setModalOpen(isOpen) {
+  if (!elements.configModal) {
+    return;
+  }
+  elements.configModal.hidden = !isOpen;
+}
+
+setModalOpen(false);
 
 function setStatus(message, isError = false) {
   elements.jobStatus.textContent = message;
-  elements.jobStatus.style.color = isError ? "#982f11" : "";
+  elements.jobStatus.classList.toggle("status-card--error", isError);
 }
 
 function setProfileHint(message, isError = false) {
   elements.profileHint.textContent = message;
-  elements.profileHint.style.color = isError ? "#982f11" : "";
+  elements.profileHint.classList.toggle("profile-hint--error", isError);
 }
 
 function clearProfileForm() {
@@ -46,7 +60,7 @@ function clearProfileForm() {
   elements.baseUrl.value = "";
   elements.model.value = "";
   elements.apiKey.value = "";
-  setProfileHint("新建配置时会把 API key 保存在当前仓库的 `.local/automation/` 中。");
+  setProfileHint("新建配置时会将 API Key 保存在当前仓库的 `.local/automation/` 目录中。");
 }
 
 function renderProfiles() {
@@ -79,7 +93,7 @@ async function fetchJson(url, options = {}) {
   const response = await fetch(url, options);
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.error || "Request failed.");
+    throw new Error(payload.error || "请求失败。");
   }
   return payload;
 }
@@ -88,12 +102,52 @@ async function loadProfiles() {
   const payload = await fetchJson("/api/profiles");
   state.profiles = payload.profiles;
   renderProfiles();
+
   if (state.profiles.length) {
     applyProfile(state.profiles[0].id);
     elements.profileSelect.value = state.profiles[0].id;
   } else {
     clearProfileForm();
   }
+}
+
+function formatTime(isoString) {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return "未知时间";
+  }
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderHistory(items) {
+  if (!Array.isArray(items) || !items.length) {
+    elements.historyList.innerHTML = '<p class="history-empty">暂无记录。</p>';
+    return;
+  }
+
+  elements.historyList.innerHTML = items
+    .map((item) => {
+      const safeUrl = encodeURI(item.previewUrl || "#");
+      return `
+        <article class="history-item">
+          <p class="history-title">${item.projectSlug} / ${item.versionName}</p>
+          <p class="history-meta">模式：${item.generationMode || "unknown"} · ${formatTime(item.updatedAt)}</p>
+          <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">打开预览</a>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function loadHistory() {
+  const payload = await fetchJson("/api/history?limit=12");
+  renderHistory(payload.items || []);
 }
 
 async function saveProfile() {
@@ -121,7 +175,7 @@ async function saveProfile() {
 
 async function deleteProfile() {
   if (!state.selectedProfileId) {
-    setProfileHint("先选择一个已保存配置。", true);
+    setProfileHint("请先选择一个已保存配置。", true);
     return;
   }
 
@@ -153,17 +207,17 @@ async function runJob() {
     return;
   }
   if (!file) {
-    setStatus("请先选择一个 `.pptx` 文件。", true);
+    setStatus("请先上传一个 `.pptx` 文件。", true);
     return;
   }
 
   elements.runJob.disabled = true;
   elements.jobResult.hidden = true;
-  setStatus("正在读取文件并提交生成任务……");
+  setStatus("准备任务中：正在读取文件...");
 
   try {
     const fileDataBase64 = await readFileAsBase64(file);
-    setStatus("正在调用模型并构建静态网页，这一步可能需要几十秒。");
+    setStatus("正在解析 PPTX 并调用模型，通常需要几十秒...");
 
     const payload = await fetchJson("/api/run", {
       method: "POST",
@@ -181,11 +235,13 @@ async function runJob() {
     });
 
     const result = payload.result;
-    setStatus(`已完成：${result.projectSlug} ${result.versionName}。`);
+    setStatus(`生成完成：${result.projectSlug} ${result.versionName}`);
     elements.previewLink.href = result.previewUrl;
     elements.previewLink.textContent = result.previewUrl;
     elements.resultMeta.textContent = `模式：${result.generationMode} · 幻灯片 ${result.slideCount} 页 · 资源 ${result.copiedAssets} 个`;
     elements.jobResult.hidden = false;
+
+    await loadHistory();
   } catch (error) {
     setStatus(error.message, true);
   } finally {
@@ -199,15 +255,32 @@ elements.profileSelect.addEventListener("change", (event) => {
 
 elements.fileInput.addEventListener("change", () => {
   const file = elements.fileInput.files[0];
-  elements.uploadDetail.textContent = file ? `已选择：${file.name}` : "目前仅支持 `.pptx`。";
+  elements.uploadDetail.textContent = file ? `已选择：${file.name}` : "当前仅支持 `.pptx` 文件。";
 });
 
 elements.resetProfile.addEventListener("click", clearProfileForm);
 elements.saveProfile.addEventListener("click", () => saveProfile().catch((error) => setProfileHint(error.message, true)));
 elements.deleteProfile.addEventListener("click", () => deleteProfile().catch((error) => setProfileHint(error.message, true)));
 elements.runJob.addEventListener("click", runJob);
+elements.openConfigModal.addEventListener("click", () => setModalOpen(true));
+elements.closeConfigModal.addEventListener("click", () => setModalOpen(false));
+elements.configModal.addEventListener("click", (event) => {
+  if (event.target === elements.configModal) {
+    setModalOpen(false);
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && elements.configModal && !elements.configModal.hidden) {
+    setModalOpen(false);
+  }
+});
+elements.refreshHistory.addEventListener("click", () => {
+  loadHistory().catch((error) => {
+    elements.historyList.innerHTML = `<p class="history-empty">加载失败：${error.message}</p>`;
+  });
+});
 
-loadProfiles().catch((error) => {
+Promise.all([loadProfiles(), loadHistory()]).catch((error) => {
   setProfileHint(error.message, true);
   setStatus("初始化失败。", true);
 });

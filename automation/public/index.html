@@ -1,78 +1,38 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Awesome Presenter Automation</title>
+    <title>AI-Powered Presentation Converter</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <div class="shell">
+    <div class="bg-stage" aria-hidden="true">
+      <div class="blob blob--a"></div>
+      <div class="blob blob--b"></div>
+      <div class="blob blob--c"></div>
+      <div class="grid-overlay"></div>
+      <span class="dot dot--a"></span>
+      <span class="dot dot--b"></span>
+      <span class="dot dot--c"></span>
+      <span class="dot dot--d"></span>
+    </div>
+
+    <div class="app-shell">
       <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Semi-Automated Flow</p>
-          <h1>Awesome Presenter Automation</h1>
-          <p class="lede">
-            选择一个 PPTX 文件，绑定一个 OpenAI-compatible 模型配置，然后把讲解型静态网页生成到本地归档目录。
-          </p>
-        </div>
-        <div class="hero-meta">
-          <span>本地 GUI</span>
-          <span>无额外依赖</span>
-          <span>PPTX → Static Site</span>
+        <div class="hero-badge">Automation Studio</div>
+        <h1>AI-Powered Presentation Converter</h1>
+        <p class="hero-lede">Transform PPTX into polished static presentation websites with local automation and AI.</p>
+        <div class="hero-actions">
+          <button class="ghost-button ghost-button--hero" id="open-config-modal" type="button">AI 模型配置</button>
         </div>
       </header>
 
-      <main class="workspace">
-        <section class="panel panel--profiles">
+      <main class="main-layout">
+        <section class="panel panel--run">
           <div class="panel-head">
             <div>
-              <p class="panel-kicker">Model Profiles</p>
-              <h2>模型配置</h2>
-            </div>
-            <button class="ghost-button" id="reset-profile" type="button">新建配置</button>
-          </div>
-
-          <label class="field">
-            <span>已保存配置</span>
-            <select id="profile-select">
-              <option value="">请选择</option>
-            </select>
-          </label>
-
-          <div class="field-grid">
-            <label class="field">
-              <span>昵称</span>
-              <input id="profile-nickname" type="text" placeholder="例如：OpenAI Prod">
-            </label>
-            <label class="field">
-              <span>模型名</span>
-              <input id="profile-model" type="text" placeholder="例如：gpt-4.1">
-            </label>
-          </div>
-
-          <label class="field">
-            <span>Base URL</span>
-            <input id="profile-base-url" type="url" placeholder="https://api.openai.com/v1">
-          </label>
-
-          <label class="field">
-            <span>API Key</span>
-            <input id="profile-api-key" type="password" placeholder="sk-...">
-          </label>
-
-          <div class="button-row">
-            <button class="primary-button" id="save-profile" type="button">保存配置</button>
-            <button class="ghost-button" id="delete-profile" type="button">删除配置</button>
-          </div>
-
-          <div class="profile-hint" id="profile-hint"></div>
-        </section>
-
-        <section class="panel panel--job">
-          <div class="panel-head">
-            <div>
-              <p class="panel-kicker">Generation Job</p>
+              <p class="panel-kicker">Generation</p>
               <h2>生成任务</h2>
             </div>
           </div>
@@ -84,7 +44,7 @@
             </label>
             <label class="field">
               <span>场景</span>
-              <input id="job-scenario" type="text" placeholder="课程讲解 / 路演汇报 / 活动宣讲">
+              <input id="job-scenario" type="text" placeholder="课程讲解 / 路演汇报 / 产品宣讲">
             </label>
           </div>
 
@@ -107,21 +67,84 @@
           <label class="upload-zone" for="job-file">
             <input id="job-file" type="file" accept=".pptx">
             <span class="upload-label">上传 PPTX 文件</span>
-            <span class="upload-detail" id="upload-detail">目前仅支持 `.pptx`。</span>
+            <span class="upload-detail" id="upload-detail">当前仅支持 `.pptx` 文件。</span>
           </label>
 
           <div class="button-row">
-            <button class="primary-button primary-button--wide" id="run-job" type="button">开始生成</button>
+            <button class="primary-button primary-button--wide" id="run-job" type="button">Generate Webpage</button>
           </div>
 
-          <div class="status-card" id="job-status">等待任务。</div>
+          <div class="status-card" id="job-status">等待任务开始。</div>
           <div class="result-card" id="job-result" hidden>
-            <p class="result-kicker">Result Link</p>
+            <p class="result-kicker">Preview Link</p>
             <a id="preview-link" href="#" target="_blank" rel="noopener noreferrer"></a>
             <p id="result-meta"></p>
           </div>
         </section>
+
+        <aside class="side-stack">
+          <section class="panel panel--history">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">History</p>
+                <h2>最近生成</h2>
+              </div>
+              <button class="ghost-button" id="refresh-history" type="button">刷新</button>
+            </div>
+            <div class="history-list" id="history-list">
+              <p class="history-empty">暂无记录。</p>
+            </div>
+          </section>
+        </aside>
       </main>
+    </div>
+
+    <div class="modal-backdrop" id="config-modal" hidden>
+      <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="config-modal-title">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Model Config</p>
+            <h2 id="config-modal-title">模型配置</h2>
+          </div>
+          <button class="ghost-button" id="close-config-modal" type="button">关闭</button>
+        </div>
+
+        <label class="field">
+          <span>已保存配置</span>
+          <select id="profile-select">
+            <option value="">请选择</option>
+          </select>
+        </label>
+
+        <div class="field-grid field-grid--compact">
+          <label class="field">
+            <span>昵称</span>
+            <input id="profile-nickname" type="text" placeholder="DeepSeek Prod">
+          </label>
+          <label class="field">
+            <span>模型名</span>
+            <input id="profile-model" type="text" placeholder="deepseek-chat">
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Base URL</span>
+          <input id="profile-base-url" type="url" placeholder="https://api.openai.com/v1">
+        </label>
+
+        <label class="field">
+          <span>API Key</span>
+          <input id="profile-api-key" type="password" placeholder="sk-...">
+        </label>
+
+        <div class="button-row">
+          <button class="primary-button" id="save-profile" type="button">保存</button>
+          <button class="ghost-button" id="reset-profile" type="button">新建</button>
+          <button class="ghost-button" id="delete-profile" type="button">删除</button>
+        </div>
+
+        <div class="profile-hint" id="profile-hint"></div>
+      </section>
     </div>
 
     <script src="/app.js"></script>

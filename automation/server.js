@@ -985,8 +985,67 @@ function maskProfile(profile) {
   };
 }
 
+function readGenerationMode(projectSlug, versionName) {
+  const notesPath = path.join(ROOT, "versions", projectSlug, versionName, "notes.md");
+  if (!fs.existsSync(notesPath)) {
+    return "unknown";
+  }
+  const notes = fs.readFileSync(notesPath, "utf8");
+  const match = notes.match(/- Mode:\s*([a-z0-9_-]+)/i);
+  return match ? match[1] : "unknown";
+}
+
+function listGenerationHistory(limit = 12) {
+  if (!fs.existsSync(OUTPUT_ARCHIVE_DIR)) {
+    return [];
+  }
+
+  const entries = [];
+  const projects = fs
+    .readdirSync(OUTPUT_ARCHIVE_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
+  projects.forEach((projectSlug) => {
+    const projectDir = path.join(OUTPUT_ARCHIVE_DIR, projectSlug);
+    const versions = fs
+      .readdirSync(projectDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && /^v\d+$/.test(entry.name))
+      .map((entry) => entry.name);
+
+    versions.forEach((versionName) => {
+      const indexPath = path.join(projectDir, versionName, "site", "index.html");
+      if (!fs.existsSync(indexPath)) {
+        return;
+      }
+
+      const stats = fs.statSync(indexPath);
+      entries.push({
+        projectSlug,
+        versionName,
+        generationMode: readGenerationMode(projectSlug, versionName),
+        previewUrl: `http://${HOST}:${PORT}/generated/${encodeURIComponent(projectSlug)}/${encodeURIComponent(
+          versionName
+        )}/site/index.html`,
+        sitePath: indexPath,
+        updatedAt: stats.mtime.toISOString()
+      });
+    });
+  });
+
+  return entries
+    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+    .slice(0, Math.max(1, Number(limit) || 12));
+}
+
 async function handleApiRequest(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
+
+  if (request.method === "GET" && url.pathname === "/api/history") {
+    const limit = Number(url.searchParams.get("limit") || "12");
+    sendJson(response, 200, { items: listGenerationHistory(limit) });
+    return true;
+  }
 
   if (request.method === "GET" && url.pathname === "/api/profiles") {
     sendJson(response, 200, { profiles: listProfiles().map(maskProfile) });
@@ -1129,11 +1188,13 @@ module.exports = {
   createServer,
   extractPptxData,
   getNextVersion,
+  listGenerationHistory,
   maskProfile,
   normalizeBaseUrl,
   normalizeGeneratedProject,
   parseModelOutput,
   runGeneration,
+  sanitizeText,
   sanitizeSlug,
   stripCodeFences,
   startServer
